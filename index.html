@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Color Match Master</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            max-width: 1100px;
+            width: 95%;
+            text-align: center;
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 3s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .menu-screen,
+        .game-screen,
+        .level-complete {
+            display: none;
+        }
+
+        .menu-screen.active,
+        .game-screen.active,
+        .level-complete.active {
+            display: block;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn,
+        .menu-btn,
+        .next-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            min-width: 120px;
+        }
+
+        .difficulty-btn.easy {
+            background: linear-gradient(45deg, #11998e, #38ef7d);
+        }
+
+        .difficulty-btn.medium {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+        }
+
+        .difficulty-btn.hard {
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            color: #222;
+        }
+
+        .menu-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            margin: 10px;
+        }
+
+        .next-btn {
+            background: linear-gradient(45deg, #11998e, #38ef7d);
+            margin-top: 20px;
+        }
+
+        .difficulty-btn:hover,
+        .menu-btn:hover,
+        .next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        #undo-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 15px;
+            border-radius: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .info-item {
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .target-color-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .board-wrapper {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: inline-block;
+        }
+
+        .game-board {
+            display: grid;
+            gap: 4px;
+            justify-content: center;
+            line-height: 0;
+            aspect-ratio: 1/1;
+            /* ensures square area */
+            width: 600px;
+            /* grid will fit here */
+            height: 600px;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+
+        .color-block {
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            margin: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.12);
+            transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+
+        .color-block.animate {
+            animation: colorChange 0.4s ease;
+        }
+
+        @keyframes colorChange {
+            0% {
+                transform: scale(1);
+                opacity: 1
+            }
+
+            50% {
+                transform: scale(0.6);
+                opacity: 0.5
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        .color-block:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .color-block.selected {
+            border-color: #ffd700;
+            transform: scale(1.06);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.25);
+        }
+
+        .color-palette {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 15px;
+            border-radius: 15px;
+            min-width: 140px;
+        }
+
+        .palette-title {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .color-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            border: 3px solid transparent;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(255, 255, 255, 0.08);
+        }
+
+        .color-option:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .color-option.selected {
+            border-color: #ffd700;
+            transform: scale(1.06);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.12);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #11998e, #38ef7d);
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .level-complete h2 {
+            color: #38ef7d;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .stars {
+            font-size: 3rem;
+            margin: 20px 0;
+            color: #ffd700;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 1000px) {
+            .game-board {
+                width: 520px;
+                height: 520px;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .game-board {
+                width: 360px;
+                height: 360px;
+            }
+
+            .color-options .color-option {
+                width: 48px;
+                height: 48px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .game-board {
+                width: 300px;
+                height: 300px;
+            }
+
+            .color-option {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <h1 class="game-title">Color Match Master</h1>
+
+        <div class="menu-screen active">
+            <div class="instructions">
+                <h3>How to Play:</h3>
+                <p>Match all blocks to the target color within the given number of turns. Select a color from the right
+                    palette, then click a block to change all connected blocks of the same color to the selected color.
+                </p>
+                <p><strong>Note:</strong> Every level is a 10×10 grid and uses only <em>Blue, Yellow, Green, Red</em>.
+                </p>
+            </div>
+
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn easy" onclick="startGame('easy')">
+                    Easy<br><small>8 turns</small>
+                </button>
+                <button class="difficulty-btn medium" onclick="startGame('medium')">
+                    Medium<br><small>6 turns</small>
+                </button>
+                <button class="difficulty-btn hard" onclick="startGame('hard')">
+                    Hard<br><small>4 turns</small>
+                </button>
+            </div>
+            <div class="high-scores" style="margin-top:20px;">
+                <h3>High Scores</h3>
+                <p>Easy: <span id="high-score-easy">0</span></p>
+                <p>Medium: <span id="high-score-medium">0</span></p>
+                <p>Hard: <span id="high-score-hard">0</span></p>
+            </div>
+        </div>
+
+        <div class="game-screen">
+            <div class="game-info">
+                <div class="info-item">
+                    <div class="info-label">Level</div>
+                    <div class="info-value" id="level-display">1</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Turns Left</div>
+                    <div class="info-value" id="turns-display">10</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Difficulty</div>
+                    <div class="info-value" id="difficulty-display">Easy</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Target Color</div>
+                    <div class="target-color-text">
+                        <span id="target-color-text"></span>
+                        <div id="target-color-swatch"
+                            style="width:20px; height:20px; display:inline-block; border-radius:5px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width:100%"></div>
+            </div>
+
+            <div class="game-area">
+                <div class="game-content">
+                    <div class="board-wrapper">
+                        <div class="game-board" id="game-board" role="grid" aria-label="Color match board"></div>
+                    </div>
+                    <div class="button-container" style="margin-top:12px;">
+                        <button class="menu-btn" onclick="showMenu()">Back to Menu</button>
+                        <button class="menu-btn" id="undo-btn" onclick="undoMove()" disabled>Undo</button>
+                    </div>
+                </div>
+
+                <div class="color-palette">
+                    <div class="palette-title">Choose Color</div>
+                    <div class="color-options" id="color-options"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="level-complete">
+            <h2 id="completion-message">Level Complete!</h2>
+            <div class="stars" id="stars-display">⭐⭐⭐</div>
+            <p id="completion-details">Perfect! You matched all colors!</p>
+            <button class="next-btn" id="next-level-btn" onclick="nextLevel()">Next Level</button>
+            <button class="menu-btn" onclick="showMenu()">Main Menu</button>
+        </div>
+    </div>
+
+    <script>
+        class ColorMatchGame {
+            constructor() {
+                this.currentLevel = 1;
+                this.maxLevel = 50;
+                this.difficulty = 'easy';
+                this.turns = 0;
+                this.maxTurns = 8;
+                this.gridSize = 10; // fixed to 10x10 as requested
+                // Only the four colors allowed across the whole game:
+                this.colors = [
+                    { name: 'Red', hex: '#ff6b6b' },
+                    { name: 'Yellow', hex: '#f9ca24' },
+                    { name: 'Green', hex: '#00b894' },
+                    { name: 'Blue', hex: '#45b7d1' }
+                ];
+                this.gameBoard = [];
+                this.targetColor = null;
+                this.selectedColor = this.colors[0];
+                this.moveHistory = [];
+                this.highScores = JSON.parse(localStorage.getItem('colorMatchHighScores')) || { easy: 0, medium: 0, hard: 0 };
+            }
+
+            debounce(fn, delay) {
+                let timeoutId;
+                return (...args) => {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => fn.apply(this, args), delay);
+                };
+            }
+
+            startGame(difficulty) {
+                this.difficulty = difficulty;
+                this.currentLevel = 1;
+                this.setupDifficulty();
+                this.generateLevel();
+                this.showGameScreen();
+            }
+
+            setupDifficulty() {
+                // Grid size is fixed to 10 regardless of difficulty
+                this.gridSize = 10;
+                switch (this.difficulty) {
+                    case 'easy':
+                        this.maxTurns = 8;
+                        break;
+                    case 'medium':
+                        this.maxTurns = 6;
+                        break;
+                    case 'hard':
+                        this.maxTurns = 4;
+                        break;
+                }
+                this.moveHistory = [];
+                document.getElementById('undo-btn').disabled = true;
+            }
+
+            generateLevel() {
+                this.turns = 0;
+                // choose a target color from the 4 colors
+                this.targetColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+                this.gameBoard = [];
+
+                // Choose a base color different from the target (if possible)
+                let baseCandidates = this.colors.filter(c => c.hex !== this.targetColor.hex);
+                const baseColor = baseCandidates[Math.floor(Math.random() * baseCandidates.length)] || this.colors[0];
+
+                // Fill board mostly with baseColor, sprinkle other colors (but never pick target for sprinkled positions)
+                const totalCells = this.gridSize * this.gridSize;
+                for (let i = 0; i < totalCells; i++) {
+                    this.gameBoard.push(baseColor);
+                }
+
+                // Sprinkle some other colors including target in a controlled way so target exists on board (but not everywhere)
+                // Ensure at least ~25% of board is non-base to make gameplay interesting, and ensure some target tiles exist.
+                const numVariation = Math.floor(totalCells * 0.35);
+                for (let i = 0; i < numVariation; i++) {
+                    const index = Math.floor(Math.random() * totalCells);
+                    // pick a color at random from allowed colors, but allow target too so it appears on board
+                    const randomColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+                    this.gameBoard[index] = randomColor;
+                }
+
+                // guarantee at least 1 target color exists
+                if (!this.gameBoard.some(c => c.hex === this.targetColor.hex)) {
+                    const idx = Math.floor(Math.random() * totalCells);
+                    this.gameBoard[idx] = this.targetColor;
+                }
+
+                this.updateDisplay();
+                this.renderBoard();
+                this.renderColorPalette();
+            }
+
+            renderBoard() {
+                const boardElement = document.getElementById('game-board');
+                // grid-template to produce gridSize columns/rows
+                boardElement.style.gridTemplateColumns = `repeat(${this.gridSize}, 1fr)`;
+                boardElement.style.gridTemplateRows = `repeat(${this.gridSize}, 1fr)`;
+                const fragment = document.createDocumentFragment();
+
+                this.gameBoard.forEach((colorObj, index) => {
+                    const block = document.createElement('div');
+                    block.className = 'color-block';
+                    block.style.backgroundColor = colorObj.hex;
+                    block.setAttribute('role', 'button');
+                    block.setAttribute('aria-label', `Color block at position ${index + 1}, color ${colorObj.name}`);
+                    block.setAttribute('tabindex', '0');
+
+                    // Bind click with debounce for safety
+                    const debouncedClick = this.debounce(() => this.clickBlock(index), 150);
+                    block.addEventListener('click', debouncedClick);
+                    block.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            debouncedClick();
+                            e.preventDefault();
+                        }
+                    });
+
+                    fragment.appendChild(block);
+                });
+
+                boardElement.innerHTML = '';
+                boardElement.appendChild(fragment);
+            }
+
+            renderColorPalette() {
+                const paletteElement = document.getElementById('color-options');
+                paletteElement.innerHTML = '';
+                this.colors.forEach(colorObj => {
+                    const colorOption = document.createElement('div');
+                    colorOption.className = 'color-option';
+                    colorOption.style.backgroundColor = colorObj.hex;
+                    colorOption.title = colorObj.name;
+                    colorOption.setAttribute('role', 'button');
+                    colorOption.setAttribute('aria-label', `Select color ${colorObj.name}`);
+                    colorOption.setAttribute('tabindex', '0');
+                    if (colorObj.hex === this.selectedColor.hex) colorOption.classList.add('selected');
+
+                    colorOption.addEventListener('click', () => this.selectColor(colorObj));
+                    colorOption.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            this.selectColor(colorObj);
+                            e.preventDefault();
+                        }
+                    });
+
+                    paletteElement.appendChild(colorOption);
+                });
+            }
+
+            selectColor(colorObj) {
+                this.selectedColor = colorObj;
+                this.renderColorPalette();
+            }
+
+            clickBlock(index) {
+                if (this.turns >= this.maxTurns) return;
+                const clickedColor = this.gameBoard[index];
+                // if selected color is same as clicked color, nothing happens
+                if (clickedColor.hex === this.selectedColor.hex) return;
+
+                // find connected region of the clicked color
+                const connectedIndices = this.findConnectedBlocks(index, clickedColor.hex);
+
+                // record move for undo
+                this.moveHistory.push({
+                    indices: connectedIndices.slice(),
+                    previousColor: clickedColor,
+                    newColor: this.selectedColor
+                });
+
+                // apply color change
+                connectedIndices.forEach(i => { this.gameBoard[i] = this.selectedColor; });
+
+                this.turns++;
+                this.updateDisplay();
+                this.renderBoard();
+                document.getElementById('undo-btn').disabled = false;
+
+                // animate changed blocks
+                const boardElement = document.getElementById('game-board').children;
+                connectedIndices.forEach(i => {
+                    if (boardElement[i]) {
+                        boardElement[i].classList.add('animate');
+                        setTimeout(() => boardElement[i].classList.remove('animate'), 400);
+                    }
+                });
+
+                if (this.checkWin()) {
+                    this.completeLevel();
+                } else if (this.turns >= this.maxTurns) {
+                    this.gameOver();
+                }
+            }
+
+            findConnectedBlocks(startIndex, colorHex) {
+                const connected = new Set();
+                const toCheck = [startIndex];
+                const checked = new Set();
+                const getRowCol = (index) => ({ row: Math.floor(index / this.gridSize), col: index % this.gridSize });
+                const getIndex = (row, col) => row * this.gridSize + col;
+
+                while (toCheck.length > 0) {
+                    const idx = toCheck.pop();
+                    if (checked.has(idx)) continue;
+                    checked.add(idx);
+                    if (!this.gameBoard[idx] || this.gameBoard[idx].hex !== colorHex) continue;
+                    connected.add(idx);
+
+                    const { row, col } = getRowCol(idx);
+                    const neighbors = [
+                        { r: row - 1, c: col },
+                        { r: row + 1, c: col },
+                        { r: row, c: col - 1 },
+                        { r: row, c: col + 1 }
+                    ];
+                    for (const { r, c } of neighbors) {
+                        if (r >= 0 && r < this.gridSize && c >= 0 && c < this.gridSize) {
+                            const nIndex = getIndex(r, c);
+                            if (!checked.has(nIndex)) toCheck.push(nIndex);
+                        }
+                    }
+                }
+
+                return Array.from(connected);
+            }
+
+            checkWin() {
+                return this.gameBoard.every(block => block.hex === this.targetColor.hex);
+            }
+
+            completeLevel() {
+                const stars = this.calculateStars();
+                const score = this.currentLevel * stars * 100;
+                if (score > this.highScores[this.difficulty]) {
+                    this.highScores[this.difficulty] = score;
+                    localStorage.setItem('colorMatchHighScores', JSON.stringify(this.highScores));
+                }
+
+                document.getElementById('completion-message').textContent = `Level ${this.currentLevel} Complete!`;
+                document.getElementById('stars-display').textContent = '⭐'.repeat(stars);
+                document.getElementById('completion-details').textContent = `You used ${this.turns} of ${this.maxTurns} turns. High Score: ${this.highScores[this.difficulty]}`;
+                document.getElementById('next-level-btn').style.display = this.currentLevel < this.maxLevel ? 'block' : 'none';
+                this.showLevelCompleteScreen();
+            }
+
+            calculateStars() {
+                const turnsUsed = this.turns;
+                const maxTurns = this.maxTurns;
+                if (turnsUsed <= Math.ceil(maxTurns * 0.4)) return 3;
+                if (turnsUsed <= Math.ceil(maxTurns * 0.7)) return 2;
+                return 1;
+            }
+
+            gameOver() {
+                document.getElementById('completion-message').textContent = 'Game Over!';
+                document.getElementById('stars-display').textContent = '';
+                document.getElementById('completion-details').textContent = 'You ran out of turns. Try again!';
+                document.getElementById('next-level-btn').style.display = 'none';
+                this.showLevelCompleteScreen();
+            }
+
+            updateDisplay() {
+                document.getElementById('level-display').textContent = this.currentLevel;
+                document.getElementById('turns-display').textContent = Math.max(0, this.maxTurns - this.turns);
+                document.getElementById('difficulty-display').textContent = this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1);
+                document.getElementById('target-color-text').textContent = this.targetColor.name;
+                document.getElementById('target-color-swatch').style.backgroundColor = this.targetColor.hex;
+                const progressPercentage = Math.max(0, ((this.maxTurns - this.turns) / this.maxTurns) * 100);
+                document.getElementById('progress-fill').style.width = `${progressPercentage}%`;
+            }
+
+            showGameScreen() {
+                document.querySelector('.menu-screen').classList.remove('active');
+                document.querySelector('.game-screen').classList.add('active');
+                document.querySelector('.level-complete').classList.remove('active');
+            }
+
+            showLevelCompleteScreen() {
+                document.querySelector('.menu-screen').classList.remove('active');
+                document.querySelector('.game-screen').classList.remove('active');
+                document.querySelector('.level-complete').classList.add('active');
+                // update highscores in menu
+                document.getElementById('high-score-easy').textContent = this.highScores.easy;
+                document.getElementById('high-score-medium').textContent = this.highScores.medium;
+                document.getElementById('high-score-hard').textContent = this.highScores.hard;
+            }
+
+            showMenu() {
+                document.querySelector('.menu-screen').classList.add('active');
+                document.querySelector('.game-screen').classList.remove('active');
+                document.querySelector('.level-complete').classList.remove('active');
+                document.getElementById('high-score-easy').textContent = this.highScores.easy;
+                document.getElementById('high-score-medium').textContent = this.highScores.medium;
+                document.getElementById('high-score-hard').textContent = this.highScores.hard;
+            }
+
+            nextLevel() {
+                this.currentLevel = Math.min(this.currentLevel + 1, this.maxLevel);
+                this.generateLevel();
+                this.showGameScreen();
+            }
+
+            undoMove() {
+                if (this.moveHistory.length === 0) return;
+                const lastMove = this.moveHistory.pop();
+                lastMove.indices.forEach(i => {
+                    this.gameBoard[i] = lastMove.previousColor;
+                });
+                this.turns = Math.max(0, this.turns - 1);
+                this.updateDisplay();
+                this.renderBoard();
+                document.getElementById('undo-btn').disabled = this.moveHistory.length === 0;
+            }
+        }
+
+        // Initialize and bind functions for global use
+        const game = new ColorMatchGame();
+        window.startGame = game.startGame.bind(game);
+        window.nextLevel = game.nextLevel.bind(game);
+        window.showMenu = game.showMenu.bind(game);
+        window.undoMove = game.undoMove.bind(game);
+
+        // Auto start in easy mode when page loads OR show menu depending on preference
+        // We'll show the menu first (original behaviour). You can uncomment the next line to auto-start:
+        // window.startGame('easy');
+    </script>
+</body>
+
+</html>
